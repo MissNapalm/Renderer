@@ -8,10 +8,26 @@
             margin: 0;
             overflow: hidden;
         }
+        #control-panel {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(255, 255, 255, 0.7);
+            padding: 10px;
+            border-radius: 5px;
+        }
+        #viewer-container {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: calc(100vh - 40px);
+        }
     </style>
 </head>
 <body>
-    <div id="ui-container">
+    <div id="control-panel">
+        <h2>Control Panel</h2>
         <div>
             <label for="shapeSelect">Select Shape:</label>
             <select id="shapeSelect">
@@ -19,10 +35,6 @@
                 <option value="sphere">Sphere</option>
                 <option value="cylinder">Cylinder</option>
             </select>
-        </div>
-        <div>
-            <label for="shapeSize">Size of Object:</label>
-            <input type="range" id="shapeSize" min="1" max="5" step="0.1" value="1">
         </div>
         <div>
             <label for="rotationDirection">Rotation Direction:</label>
@@ -51,7 +63,9 @@
             <label for="backgroundColor">Background Color:</label>
             <input type="color" id="backgroundColor" value="#000000">
         </div>
-        <button id="renderButton">Render</button>
+        <div>
+            <button id="renderButton">Render</button>
+        </div>
     </div>
     <div id="viewer-container"></div>
 
@@ -60,82 +74,67 @@
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
         camera.position.set(0, 0, 5);
-        
+
         const renderer = new THREE.WebGLRenderer({ alpha: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setSize(window.innerWidth, window.innerHeight - 40);
         document.getElementById('viewer-container').appendChild(renderer.domElement);
-        
+
         let currentShape = 'cube';
-        let shapeSize = 1;
         let rotationDirection = 'clockwise';
         let xRotationSpeed = 0.01;
         let yRotationSpeed = 0.01;
         let zRotationSpeed = 0.01;
-        
-        const uiContainer = document.getElementById('ui-container');
-        const viewerContainer = document.getElementById('viewer-container');
-        
-        function createWireframe(shape, wireframeColor, shapeSize) {
+        let wireframeColor = '#ff0000';
+        let backgroundColor = '#000000';
+
+        function createWireframe(shape, wireframeColor) {
             const wireframeMaterial = new THREE.MeshBasicMaterial({ color: wireframeColor, wireframe: true });
             let wireframe;
-            
+
             switch (shape) {
                 case 'cube':
-                    wireframe = new THREE.Mesh(new THREE.BoxGeometry(shapeSize, shapeSize, shapeSize), wireframeMaterial);
+                    wireframe = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), wireframeMaterial);
                     break;
                 case 'sphere':
-                    wireframe = new THREE.Mesh(new THREE.SphereGeometry(shapeSize, 32, 32), wireframeMaterial);
+                    wireframe = new THREE.Mesh(new THREE.SphereGeometry(1, 32, 32), wireframeMaterial);
                     break;
                 case 'cylinder':
-                    wireframe = new THREE.Mesh(new THREE.CylinderGeometry(shapeSize, shapeSize, shapeSize * 2, 32), wireframeMaterial);
+                    wireframe = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, 2, 32), wireframeMaterial);
                     break;
                 default:
                     wireframe = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), wireframeMaterial);
                     break;
             }
-            
+
             wireframe.position.set(0, 0, 0);
             return wireframe;
         }
-        
+
         function updateWireframe() {
             const oldWireframe = scene.getObjectByName('wireframe');
             scene.remove(oldWireframe);
-            
-            const wireframeColor = document.getElementById('wireframeColor').value;
-            const backgroundColor = document.getElementById('backgroundColor').value;
-            
+
             currentShape = document.getElementById('shapeSelect').value;
-            shapeSize = parseFloat(document.getElementById('shapeSize').value);
             rotationDirection = document.getElementById('rotationDirection').value;
             xRotationSpeed = parseFloat(document.getElementById('xRotationSpeed').value);
             yRotationSpeed = parseFloat(document.getElementById('yRotationSpeed').value);
             zRotationSpeed = parseFloat(document.getElementById('zRotationSpeed').value);
-            
-            const wireframe = createWireframe(currentShape, wireframeColor, shapeSize);
+            wireframeColor = document.getElementById('wireframeColor').value;
+            backgroundColor = document.getElementById('backgroundColor').value;
+
+            const wireframe = createWireframe(currentShape, wireframeColor);
             wireframe.name = 'wireframe';
             scene.add(wireframe);
             renderer.setClearColor(backgroundColor, 1);
         }
-        
-        document.getElementById('shapeSelect').addEventListener('change', (event) => {
-            currentShape = event.target.value;
-        });
-        
-        document.getElementById('wireframeColor').addEventListener('change', updateWireframe);
-        document.getElementById('backgroundColor').addEventListener('change', updateWireframe);
-        document.getElementById('shapeSize').addEventListener('input', updateWireframe);
-        document.getElementById('rotationDirection').addEventListener('change', updateWireframe);
-        document.getElementById('xRotationSpeed').addEventListener('input', updateWireframe);
-        document.getElementById('yRotationSpeed').addEventListener('input', updateWireframe);
-        document.getElementById('zRotationSpeed').addEventListener('input', updateWireframe);
+
         document.getElementById('renderButton').addEventListener('click', updateWireframe);
-        
+
         updateWireframe();
-        
+
         function animate() {
             requestAnimationFrame(animate);
-            
+
             if (scene.getObjectByName('wireframe')) {
                 if (rotationDirection === 'clockwise') {
                     scene.getObjectByName('wireframe').rotation.y += yRotationSpeed;
@@ -147,10 +146,10 @@
                     scene.getObjectByName('wireframe').rotation.z -= zRotationSpeed;
                 }
             }
-            
+
             renderer.render(scene, camera);
         }
-        
+
         animate();
     </script>
 </body>
