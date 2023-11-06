@@ -1,10 +1,157 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <meta charset="utf-8">
+    <title>Wireframe Viewer</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+        }
+    </style>
 </head>
 <body>
-    <div id="scene-container"></div>
-    <script src="scene.js"></script>
+    <div id="ui-container">
+        <div>
+            <label for="shapeSelect">Select Shape:</label>
+            <select id="shapeSelect">
+                <option value="cube">Cube</option>
+                <option value="sphere">Sphere</option>
+                <option value="cylinder">Cylinder</option>
+            </select>
+        </div>
+        <div>
+            <label for="shapeSize">Size of Object:</label>
+            <input type="range" id="shapeSize" min="1" max="5" step="0.1" value="1">
+        </div>
+        <div>
+            <label for="rotationDirection">Rotation Direction:</label>
+            <select id="rotationDirection">
+                <option value="clockwise">Clockwise</option>
+                <option value="counterclockwise">Counterclockwise</option>
+            </select>
+        </div>
+        <div>
+            <label for="xRotationSpeed">X Rotation Speed:</label>
+            <input type="number" id="xRotationSpeed" value="0.01">
+        </div>
+        <div>
+            <label for="yRotationSpeed">Y Rotation Speed:</label>
+            <input type="number" id="yRotationSpeed" value="0.01">
+        </div>
+        <div>
+            <label for="zRotationSpeed">Z Rotation Speed:</label>
+            <input type="number" id="zRotationSpeed" value="0.01">
+        </div>
+        <div>
+            <label for="wireframeColor">Wireframe Color:</label>
+            <input type="color" id="wireframeColor" value="#ff0000">
+        </div>
+        <div>
+            <label for="backgroundColor">Background Color:</label>
+            <input type="color" id="backgroundColor" value="#000000">
+        </div>
+        <button id="renderButton">Render</button>
+    </div>
+    <div id="viewer-container"></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/110/three.min.js"></script>
+    <script>
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(0, 0, 5);
+        
+        const renderer = new THREE.WebGLRenderer({ alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.getElementById('viewer-container').appendChild(renderer.domElement);
+        
+        let currentShape = 'cube';
+        let shapeSize = 1;
+        let rotationDirection = 'clockwise';
+        let xRotationSpeed = 0.01;
+        let yRotationSpeed = 0.01;
+        let zRotationSpeed = 0.01;
+        
+        const uiContainer = document.getElementById('ui-container');
+        const viewerContainer = document.getElementById('viewer-container');
+        
+        function createWireframe(shape, wireframeColor, shapeSize) {
+            const wireframeMaterial = new THREE.MeshBasicMaterial({ color: wireframeColor, wireframe: true });
+            let wireframe;
+            
+            switch (shape) {
+                case 'cube':
+                    wireframe = new THREE.Mesh(new THREE.BoxGeometry(shapeSize, shapeSize, shapeSize), wireframeMaterial);
+                    break;
+                case 'sphere':
+                    wireframe = new THREE.Mesh(new THREE.SphereGeometry(shapeSize, 32, 32), wireframeMaterial);
+                    break;
+                case 'cylinder':
+                    wireframe = new THREE.Mesh(new THREE.CylinderGeometry(shapeSize, shapeSize, shapeSize * 2, 32), wireframeMaterial);
+                    break;
+                default:
+                    wireframe = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), wireframeMaterial);
+                    break;
+            }
+            
+            wireframe.position.set(0, 0, 0);
+            return wireframe;
+        }
+        
+        function updateWireframe() {
+            const oldWireframe = scene.getObjectByName('wireframe');
+            scene.remove(oldWireframe);
+            
+            const wireframeColor = document.getElementById('wireframeColor').value;
+            const backgroundColor = document.getElementById('backgroundColor').value;
+            
+            currentShape = document.getElementById('shapeSelect').value;
+            shapeSize = parseFloat(document.getElementById('shapeSize').value);
+            rotationDirection = document.getElementById('rotationDirection').value;
+            xRotationSpeed = parseFloat(document.getElementById('xRotationSpeed').value);
+            yRotationSpeed = parseFloat(document.getElementById('yRotationSpeed').value);
+            zRotationSpeed = parseFloat(document.getElementById('zRotationSpeed').value);
+            
+            const wireframe = createWireframe(currentShape, wireframeColor, shapeSize);
+            wireframe.name = 'wireframe';
+            scene.add(wireframe);
+            renderer.setClearColor(backgroundColor, 1);
+        }
+        
+        document.getElementById('shapeSelect').addEventListener('change', (event) => {
+            currentShape = event.target.value;
+        });
+        
+        document.getElementById('wireframeColor').addEventListener('change', updateWireframe);
+        document.getElementById('backgroundColor').addEventListener('change', updateWireframe);
+        document.getElementById('shapeSize').addEventListener('input', updateWireframe);
+        document.getElementById('rotationDirection').addEventListener('change', updateWireframe);
+        document.getElementById('xRotationSpeed').addEventListener('input', updateWireframe);
+        document.getElementById('yRotationSpeed').addEventListener('input', updateWireframe);
+        document.getElementById('zRotationSpeed').addEventListener('input', updateWireframe);
+        document.getElementById('renderButton').addEventListener('click', updateWireframe);
+        
+        updateWireframe();
+        
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            if (scene.getObjectByName('wireframe')) {
+                if (rotationDirection === 'clockwise') {
+                    scene.getObjectByName('wireframe').rotation.y += yRotationSpeed;
+                    scene.getObjectByName('wireframe').rotation.x += xRotationSpeed;
+                    scene.getObjectByName('wireframe').rotation.z += zRotationSpeed;
+                } else {
+                    scene.getObjectByName('wireframe').rotation.y -= yRotationSpeed;
+                    scene.getObjectByName('wireframe').rotation.x -= xRotationSpeed;
+                    scene.getObjectByName('wireframe').rotation.z -= zRotationSpeed;
+                }
+            }
+            
+            renderer.render(scene, camera);
+        }
+        
+        animate();
+    </script>
 </body>
 </html>
